@@ -11,7 +11,7 @@ app.use(bodyParser.json());
 app.use(bodyParser.urlencoded({ extended: true }));
 app.use(express.static(path.join(__dirname, 'public')));
 
-const mongoose = require('mongoose');
+const mongoose = require('mongoose'); //mongooose
 
 // Connect to MongoDB for Payment Gateway
 mongoose.connect(process.env.MONGO_URI || 'mongodb://localhost:27017/payment-app')
