@@ -1,0 +1,219 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Payment Gateway - Home</title>
+    <link rel="stylesheet" href="/css/style.css">
+    <style>
+        .landing-container {
+            text-align: center;
+            padding: 20px;
+        }
+
+        .landing-header {
+            margin-bottom: 40px;
+        }
+
+        .landing-header h1 {
+            font-size: 36px;
+            color: #333;
+            margin-bottom: 10px;
+        }
+
+        .landing-header p {
+            font-size: 18px;
+            color: #666;
+        }
+
+        .service-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+            gap: 30px;
+            margin-top: 40px;
+        }
+
+        .service-card {
+            background: white;
+            border-radius: 20px;
+            padding: 40px 30px;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.1);
+            transition: all 0.3s ease;
+            cursor: pointer;
+            text-decoration: none;
+            display: block;
+            border: 3px solid transparent;
+        }
+
+        .service-card:hover {
+            transform: translateY(-10px);
+            box-shadow: 0 20px 40px rgba(102, 126, 234, 0.3);
+            border-color: #667eea;
+        }
+
+        .service-icon {
+            font-size: 64px;
+            margin-bottom: 20px;
+            animation: bounce 2s infinite;
+        }
+
+        @keyframes bounce {
+
+            0%,
+            100% {
+                transform: translateY(0);
+            }
+
+            50% {
+                transform: translateY(-10px);
+            }
+        }
+
+        .service-card:hover .service-icon {
+            animation: none;
+            transform: scale(1.2);
+        }
+
+        .service-title {
+            font-size: 24px;
+            font-weight: 700;
+            color: #333;
+            margin-bottom: 10px;
+        }
+
+        .service-description {
+            font-size: 15px;
+            color: #666;
+            line-height: 1.6;
+            margin-bottom: 20px;
+        }
+
+        .service-features {
+            list-style: none;
+            padding: 0;
+            margin: 20px 0;
+        }
+
+        .service-features li {
+            font-size: 14px;
+            color: #555;
+            padding: 8px 0;
+            border-bottom: 1px solid #f0f0f0;
+        }
+
+        .service-features li:last-child {
+            border-bottom: none;
+        }
+
+        .service-badge {
+            display: inline-block;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 8px 20px;
+            border-radius: 20px;
+            font-size: 13px;
+            font-weight: 600;
+            margin-top: 15px;
+        }
+
+        .popular-badge {
+            position: absolute;
+            top: -10px;
+            right: 20px;
+            background: linear-gradient(135deg, #11998e 0%, #38ef7d 100%);
+            color: white;
+            padding: 5px 15px;
+            border-radius: 15px;
+            font-size: 12px;
+            font-weight: 700;
+            box-shadow: 0 5px 15px rgba(17, 153, 142, 0.4);
+        }
+
+        .service-card-wrapper {
+            position: relative;
+        }
+    </style>
+</head>
+
+<body>
+    <div class="container">
+        <div class="card">
+            <div class="landing-container">
+                <div class="landing-header">
+                    <h1>💳 Payment Gateway</h1>
+                    <p>Choose your service to get started</p>
+                </div>
+
+                <div class="service-grid">
+                    <!-- Mobile Recharge Service -->
+                    <div class="service-card-wrapper">
+                        <span class="popular-badge">⭐ POPULAR</span>
+                        <a href="/recharge" class="service-card">
+                            <div class="service-icon">📱</div>
+                            <div class="service-title">Mobile Recharge</div>
+                            <div class="service-description">
+                                Instant mobile recharge for all operators
+                            </div>
+                            <ul class="service-features">
+                                <li>✓ Auto operator detection</li>
+                                <li>✓ Multiple recharge plans</li>
+                                <li>✓ Jio, Airtel, Vi, BSNL</li>
+                                <li>✓ Instant activation</li>
+                            </ul>
+                            <div class="service-badge">Recharge Now →</div>
+                        </a>
+                    </div>
+
+                    <!-- General Payment Service -->
+                    <div class="service-card-wrapper">
+                        <a href="/payment" class="service-card">
+                            <div class="service-icon">💰</div>
+                            <div class="service-title">General Payment</div>
+                            <div class="service-description">
+                                Make payments for any service or product
+                            </div>
+                            <ul class="service-features">
+                                <li>✓ Flexible amount</li>
+                                <li>✓ Multiple payment methods</li>
+                                <li>✓ Secure transactions</li>
+                                <li>✓ Instant confirmation</li>
+                            </ul>
+                            <div class="service-badge">Pay Now →</div>
+                        </a>
+                    </div>
+                </div>
+
+                <!-- Features Section -->
+                <div style="margin-top: 50px; padding-top: 30px; border-top: 2px solid #e0e0e0;">
+                    <h3 style="color: #333; margin-bottom: 20px;">Why Choose Us?</h3>
+                    <div
+                        style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 20px; text-align: center;">
+                        <div>
+                            <div style="font-size: 32px; margin-bottom: 10px;">🔒</div>
+                            <div style="font-weight: 600; color: #333;">Secure</div>
+                            <div style="font-size: 13px; color: #666;">Bank-grade security</div>
+                        </div>
+                        <div>
+                            <div style="font-size: 32px; margin-bottom: 10px;">⚡</div>
+                            <div style="font-weight: 600; color: #333;">Fast</div>
+                            <div style="font-size: 13px; color: #666;">Instant processing</div>
+                        </div>
+                        <div>
+                            <div style="font-size: 32px; margin-bottom: 10px;">💯</div>
+                            <div style="font-weight: 600; color: #333;">Reliable</div>
+                            <div style="font-size: 13px; color: #666;">99.9% uptime</div>
+                        </div>
+                        <div>
+                            <div style="font-size: 32px; margin-bottom: 10px;">🎯</div>
+                            <div style="font-weight: 600; color: #333;">Easy</div>
+                            <div style="font-size: 13px; color: #666;">Simple interface</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</body>
+
+</html>

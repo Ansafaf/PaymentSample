@@ -1,0 +1,628 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Social Networking System - Company Profile</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            line-height: 1.6;
+            color: #333;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+        }
+
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            background: white;
+            box-shadow: 0 20px 40px rgba(0,0,0,0.1);
+            border-radius: 20px;
+            overflow: hidden;
+            margin-top: 20px;
+            margin-bottom: 20px;
+        }
+
+        .header {
+            background-image: url("https://t4.ftcdn.net/jpg/07/23/41/55/360_F_723415505_XJvS6NLdsH2tJA7wKJmB8z0M2wnJ1e1o.jpg");
+            color: white;
+            padding: 60px 40px;
+            text-align: center;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .header::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: url('data:image/svg+xml,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100"><defs><pattern id="grid" width="10" height="10" patternUnits="userSpaceOnUse"><path d="M 10 0 L 0 0 0 10" fill="none" stroke="rgba(255,255,255,0.1)" stroke-width="1"/></pattern></defs><rect width="100" height="100" fill="url(%23grid)"/></svg>');
+            opacity: 0.3;
+        }
+
+        .logo-container {
+            width: 170px;
+            height: 120px;
+            background: rgba(255,255,255,0.1);
+            border: 2px solid rgba(255,255,255,0.3);
+            border-radius: 15px;
+            margin: 0 auto 20px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            position: relative;
+            z-index: 1;
+            backdrop-filter: blur(10px);
+            box-shadow: 0 8px 32px rgba(0,0,0,0.1);
+            overflow: hidden;
+        }
+
+        .logo-container img {
+            width: 100%;
+            height: 118%;
+            object-fit: contain;
+            border-radius: 10px;
+        }
+
+        .company-name {
+            font-size: 3em;
+            font-weight: 700;
+            margin-bottom: 10px;
+            position: relative;
+            z-index: 1;
+            text-shadow: 2px 2px 4px rgba(0,0,0,0.3);
+        }
+
+        .tagline {
+            font-size: 1.3em;
+            opacity: 0.9;
+            position: relative;
+            z-index: 1;
+        }
+
+        .section {
+            padding: 50px 40px;
+            border-bottom: 1px solid #eee;
+        }
+
+        .section:last-child {
+            border-bottom: none;
+        }
+
+        .section-title {
+            font-size: 2.2em;
+            color: #2c3e50;
+            margin-bottom: 30px;
+            text-align: center;
+            position: relative;
+        }
+
+        .section-title::after {
+            content: '';
+            width: 80px;
+            height: 4px;
+            background: linear-gradient(135deg, #00bcd4, #2c3e50);
+            display: block;
+            margin: 15px auto;
+            border-radius: 2px;
+        }
+
+        .about-grid {
+            display: grid;
+            grid-template-columns: 1fr 300px;
+            gap: 40px;
+            align-items: center;
+            margin-top: 30px;
+        }
+
+        .about-text {
+            font-size: 1.1em;
+            line-height: 1.8;
+            color: #555;
+        }
+
+        .image-placeholder {
+            width: 100%;
+            height: 250px;
+            background: linear-gradient(135deg, #f8f9fa, #e9ecef);
+            border: 2px dashed #dee2e6;
+            border-radius: 15px;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            font-size: 16px;
+            color: #6c757d;
+            text-align: center;
+            transition: all 0.3s ease;
+            overflow: hidden;
+            gap: 8px;
+            padding: 8px;
+        }
+
+        .image-placeholder:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 10px 30px rgba(0,0,0,0.1);
+        }
+
+        .office-image {
+            width: calc(50% - 4px);
+            height: calc(100% - 16px);
+            object-fit: cover;
+            border-radius: 10px;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+            transition: transform 0.3s ease;
+            flex-shrink: 0;
+        }
+
+        .office-image:hover {
+            transform: scale(1.05);
+        }
+
+        .services-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+            gap: 30px;
+            margin-top: 40px;
+        }
+
+        .service-card {
+            background: linear-gradient(135deg, #fff 0%, #f8f9fa 100%);
+            padding: 30px;
+            border-radius: 15px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.1);
+            transition: all 0.3s ease;
+            border-left: 5px solid #3498db;
+        }
+
+        .service-card:hover {
+            transform: translateY(-10px);
+            box-shadow: 0 20px 40px rgba(0,0,0,0.15);
+        }
+
+        .service-icon {
+            width: 60px;
+            height: 60px;
+            background: linear-gradient(135deg, #3498db, #2c3e50);
+            border-radius: 12px;
+            margin-bottom: 20px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 24px;
+            color: white;
+        }
+
+        .service-title {
+            font-size: 1.3em;
+            color: #2c3e50;
+            margin-bottom: 15px;
+            font-weight: 600;
+        }
+
+        .mission-vision {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 40px;
+            margin-top: 30px;
+        }
+
+        .mv-card {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 40px;
+            border-radius: 20px;
+            text-align: center;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .mv-card::before {
+            content: '';
+            position: absolute;
+            top: -50%;
+            left: -50%;
+            width: 200%;
+            height: 200%;
+            background: radial-gradient(circle, rgba(255,255,255,0.1) 0%, transparent 70%);
+            animation: float 6s ease-in-out infinite;
+        }
+
+        @keyframes float {
+            0%, 100% { transform: translateY(0px) rotate(0deg); }
+            50% { transform: translateY(-20px) rotate(180deg); }
+        }
+
+        .mv-icon {
+            font-size: 3em;
+            margin-bottom: 20px;
+            position: relative;
+            z-index: 1;
+        }
+
+        .mv-title {
+            font-size: 1.5em;
+            margin-bottom: 15px;
+            position: relative;
+            z-index: 1;
+        }
+
+        .mv-text {
+            font-size: 1.1em;
+            line-height: 1.6;
+            position: relative;
+            z-index: 1;
+        }
+
+        .contact-grid {
+            display: grid;
+            grid-template-columns: 1fr 300px;
+            gap: 40px;
+            margin-top: 30px;
+        }
+
+        .contact-info {
+            background: #f8f9fa;
+            padding: 30px;
+            border-radius: 15px;
+            border-left: 5px solid #3498db;
+        }
+
+        .contact-item {
+            display: flex;
+            align-items: flex-start;
+            margin-bottom: 25px;
+            font-size: 1.1em;
+        }
+
+        .contact-item:last-child {
+            margin-bottom: 0;
+        }
+
+        .contact-icon {
+            width: 50px;
+            height: 50px;
+            background: #3498db;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin-right: 20px;
+            color: white;
+            font-size: 18px;
+            flex-shrink: 0;
+            margin-top: 5px;
+        }
+
+        .contact-details {
+            flex: 1;
+            line-height: 1.6;
+        }
+
+        .contact-details strong {
+            display: block;
+            color: #2c3e50;
+            margin-bottom: 8px;
+            font-size: 1.1em;
+        }
+
+        .contact-details br {
+            margin-bottom: 4px;
+        }
+
+        .contact-details hr {
+            margin: 8px 0;
+            border: none;
+            border-top: 1px solid #dee2e6;
+        }
+
+        .footer {
+            background: #2c3e50;
+            color: white;
+            text-align: center;
+            padding: 30px;
+            font-size: 0.9em;
+        }
+
+        /* Responsive Design */
+        @media (max-width: 768px) {
+            .about-grid,
+            .mission-vision,
+            .contact-grid {
+                grid-template-columns: 1fr;
+                gap: 20px;
+            }
+
+            .services-grid {
+                grid-template-columns: 1fr;
+            }
+
+            .section {
+                padding: 30px 20px;
+            }
+
+            .header {
+                padding: 40px 20px;
+            }
+
+            .company-name {
+                font-size: 2em;
+                font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            }
+
+            .image-placeholder {
+                height: auto;
+                min-height: 200px;
+                flex-direction: column;
+                padding: 15px;
+            }
+
+            .office-image {
+                max-width: 100%;
+                width: 100%;
+                flex: none;
+                height: 180px;
+            }
+
+            .logo-container {
+                width: 150px;
+                height: 100px;
+            }
+
+            .contact-icon {
+                width: 45px;
+                height: 45px;
+                font-size: 16px;
+            }
+        }
+
+        @media (max-width: 480px) {
+            .container {
+                margin: 10px;
+                border-radius: 15px;
+            }
+
+            .section {
+                padding: 20px 15px;
+            }
+
+            .header {
+                padding: 30px 15px;
+            }
+
+            .company-name {
+                font-size: 1.8em;
+            }
+
+            .tagline {
+                font-size: 1.1em;
+            }
+
+            .section-title {
+                font-size: 1.8em;
+            }
+
+            .services-grid {
+                grid-template-columns: 1fr;
+                gap: 20px;
+            }
+
+            .service-card {
+                padding: 20px;
+            }
+
+            .mv-card {
+                padding: 25px;
+            }
+
+            .contact-info {
+                padding: 20px;
+            }
+
+            .image-placeholder {
+                padding: 10px;
+            }
+
+            .office-image {
+                height: 150px;
+            }
+
+            .logo-container {
+                width: 130px;
+                height: 90px;
+            }
+
+            .contact-item {
+                flex-direction: column;
+                align-items: flex-start;
+                text-align: left;
+            }
+
+            .contact-icon {
+                margin-right: 0;
+                margin-bottom: 10px;
+                align-self: flex-start;
+            }
+
+            .contact-details {
+                width: 100%;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <!-- Header Section -->
+        <div class="header">
+            <div class="logo-container">
+                <img src="https://i.im.ge/2025/09/27/nmYZx0.first-Logo.jpeg" alt="Social Network System Logo">
+            </div>
+            <h1 class="company-name">Social Networking System</h1>
+            <p class="tagline">Connecting People, Empowering Communities</p>
+        </div>
+
+        <!-- About Section -->
+        <div class="section">
+            <h2 class="section-title">About Us</h2>
+            <div class="about-grid">
+                <div class="about-text">
+                    <p><strong>Social Networking System</strong> is an innovative startup specializing in social networking platforms and comprehensive IT consulting services. As a small but dynamic company, we are dedicated to delivering cutting-edge technology solutions that drive business growth and digital transformation.</p>
+                    
+                    <p>Our expertise spans across social networking platform development, network security implementation, hardware solutions, and custom software development. We believe in building lasting relationships with our clients by providing exceptional service quality and innovative products that exceed expectations.</p>
+                    
+                    <p>Founded on the principles of innovation and excellence, we combine modern technology with personalized service to create solutions that are both powerful and user-friendly.</p>
+                </div>
+                <div class="image-placeholder">
+                    <img src="https://i.im.ge/2025/09/28/nmGrvq.officeimage-1.jpeg" alt="Office Image 1" class="office-image">
+                    <img src="https://i.im.ge/2025/09/28/nmGF2p.officeimage2.jpeg" alt="Office Image 2" class="office-image">
+                </div>
+            </div>
+        </div>
+
+        <!-- Services Section -->
+        <div class="section">
+            <h2 class="section-title">Our Services</h2>
+            <div class="services-grid">
+                <div class="service-card">
+                    <div class="service-icon">🌐</div>
+                    <div class="service-title">Social Networking Systems</div>
+                    <p>Custom social networking platforms designed to connect communities and drive engagement. We develop scalable, secure, and user-friendly social applications.</p>
+                </div>
+                
+                <div class="service-card">
+                    <div class="service-icon">🛡️</div>
+                    <div class="service-title">Network Security</div>
+                    <p>Comprehensive cybersecurity solutions to protect your digital assets. From threat assessment to implementation of robust security protocols.</p>
+                </div>
+                
+                <div class="service-card">
+                    <div class="service-icon">💻</div>
+                    <div class="service-title">IT Consulting</div>
+                    <p>Strategic IT consulting services to optimize your technology infrastructure and drive digital transformation initiatives.</p>
+                </div>
+                
+                <div class="service-card">
+                    <div class="service-icon">🔧</div>
+                    <div class="service-title">Hardware Solutions</div>
+                    <p>Complete hardware procurement, installation, and maintenance services tailored to your business requirements.</p>
+                </div>
+                
+                <div class="service-card">
+                    <div class="service-icon">⚡</div>
+                    <div class="service-title">Installation & Development</div>
+                    <p>Professional installation services and custom development solutions to implement and maintain your technology systems.</p>
+                </div>
+                
+                <div class="service-card">
+                    <div class="service-icon">📱</div>
+                    <div class="service-title">Digital Solutions</div>
+                    <p>End-to-end digital solutions including web development, mobile applications, and cloud-based services.</p>
+                </div>
+            </div>
+        </div>
+
+        <!-- Mission & Vision Section -->
+        <div class="section">
+            <h2 class="section-title">Mission & Vision</h2>
+            <div class="mission-vision">
+                <div class="mv-card">
+                    <div class="mv-icon">🎯</div>
+                    <div class="mv-title">Our Mission</div>
+                    <div class="mv-text">
+                        To deliver exceptional service quality and innovative products that ensure complete customer happiness. We are committed to providing good service and good products that exceed expectations and drive business success.
+                    </div>
+                </div>
+                
+                <div class="mv-card">
+                    <div class="mv-icon">👁️</div>
+                    <div class="mv-title">Our Vision</div>
+                    <div class="mv-text">
+                        To support and empower our workforce while building a sustainable business that values both our staff and our clients. We envision a company where employee satisfaction drives exceptional customer service.
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Contact Section -->
+        <div class="section">
+            <h2 class="section-title">Contact Us</h2>
+            <div class="contact-grid">
+                <div class="contact-info">
+                    <div class="contact-item">
+                        <div class="contact-icon">📧</div>
+                        <div class="contact-details">
+                            <strong>Email:</strong>
+                            info@socialnetworksystem.com<br>
+                            support@socialnetworksystem.com
+                            <hr>
+                            <strong>Official Email:</strong>
+                            socialnetworksystem@gmail.com
+                        </div>
+                    </div>
+                
+                    <div class="contact-item">
+                        <div class="contact-icon">📱</div>
+                        <div class="contact-details">
+                            <strong>Phone:</strong>
+                            +91 8086214347<br>
+                            +91 9496378325
+                        </div>
+                    </div>
+                    
+                    <div class="contact-item">
+                        <div class="contact-icon">🏢</div>
+                        <div class="contact-details">
+                            <strong>Office Address:</strong>
+                            Social Network System<br>
+                            1st FLOOR KARALI COMPLEX<br>
+                            TAKARAPARAMPBU<br>
+                            THIRUVANANTHAPURAM, Kerala<br>
+                            (KL - 32), PIN Code: 695008<br>
+                            India
+                       </div>
+                    </div>
+                    
+                    <div class="contact-item">
+                        <div class="contact-icon">🌐</div>
+                        <div class="contact-details">
+                            <strong>Website:</strong>
+                            www.socialnetworksystem.com
+                        </div>
+                    </div>
+                    
+                    <div class="contact-item">
+                        <div class="contact-icon">🕒</div>
+                        <div class="contact-details">
+                            <strong>Business Hours:</strong>
+                            Monday - Friday: 9:00 AM - 6:00 PM<br>
+                            Saturday: 9:00 AM - 2:00 PM<br>
+                            Sunday: Closed
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="image-placeholder" id="map-image">
+                   <img src="https://i.im.ge/2025/09/28/nw1kFS.mapgoogle.jpeg" width="320px">
+                </div>
+            </div>
+        </div>
+
+        <!-- Footer -->
+        <div class="footer">
+            <p>&copy; 2024 Social Networking System. All rights reserved. | Connecting People, Empowering Communities</p>
+            <p style="margin-top: 10px; font-size: 0.8em; opacity: 0.8;">
+                Located in Thiruvananthapuram, Kerala, India | Serving clients globally
+            </p>
+        </div>
+    </div>
+</body>
+</html>

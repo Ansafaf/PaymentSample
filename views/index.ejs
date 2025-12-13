@@ -1,0 +1,261 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Mobile Recharge - Payment Gateway</title>
+  <link rel="stylesheet" href="/css/style.css">
+  <style>
+    .plan-selector {
+      margin-bottom: 20px;
+    }
+
+    .plan-card {
+      border: 2px solid #e0e0e0;
+      border-radius: 10px;
+      padding: 15px;
+      margin-bottom: 10px;
+      cursor: pointer;
+      transition: all 0.3s ease;
+    }
+
+    .plan-card:hover {
+      border-color: #667eea;
+      background: #f8f9ff;
+    }
+
+    .plan-card.selected {
+      border-color: #667eea;
+      background: linear-gradient(135deg, rgba(102, 126, 234, 0.1) 0%, rgba(118, 75, 162, 0.1) 100%);
+    }
+
+    .plan-amount {
+      font-size: 24px;
+      font-weight: 700;
+      color: #667eea;
+    }
+
+    .plan-validity {
+      color: #666;
+      font-size: 14px;
+    }
+
+    .plan-description {
+      color: #333;
+      font-size: 13px;
+      margin-top: 5px;
+    }
+
+    .operator-badge {
+      display: inline-block;
+      padding: 5px 15px;
+      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+      color: white;
+      border-radius: 20px;
+      font-size: 14px;
+      font-weight: 600;
+      margin-bottom: 15px;
+    }
+
+    .loading-plans {
+      text-align: center;
+      padding: 20px;
+      color: #666;
+    }
+  </style>
+</head>
+
+<body>
+  <div class="container">
+    <div class="card">
+      <div class="header">
+        <h1>📱 Mobile Recharge</h1>
+        <p>Recharge any mobile number instantly</p>
+      </div>
+
+      <form id="rechargeForm" action="/payment-gateway">
+        <div class="form-group">
+          <label for="mobile">Mobile Number</label>
+          <input type="tel" id="mobile" name="mobile" placeholder="Enter 10-digit mobile number" maxlength="10"
+            pattern="[0-9]{10}" required>
+          <div id="operatorDisplay"></div>
+        </div>
+
+        <div id="planSection" style="display: none;">
+          <div class="form-group">
+            <label>Select Recharge Plan</label>
+            <div id="plansList" class="plan-selector"></div>
+          </div>
+        </div>
+
+        <div class="form-group">
+          <label for="name">Your Name</label>
+          <input type="text" id="name" name="name" placeholder="Enter your name" required>
+        </div>
+
+        <div class="form-group">
+          <label for="amount">Amount (₹)</label>
+          <input type="number" id="amount" name="amount" placeholder="Amount will be auto-filled from plan" min="1"
+            step="1" readonly required>
+        </div>
+
+
+
+        <button type="submit" class="btn" id="submitBtn" disabled>
+          Proceed to Pay
+        </button>
+      </form>
+    </div>
+  </div>
+
+  <script>
+    let selectedOperator = null;
+    let selectedPlan = null;
+    let availablePlans = [];
+
+    const mobileInput = document.getElementById('mobile');
+    const nameInput = document.getElementById('name');
+    const amountInput = document.getElementById('amount');
+    const operatorDisplay = document.getElementById('operatorDisplay');
+    const planSection = document.getElementById('planSection');
+    const plansList = document.getElementById('plansList');
+    const submitBtn = document.getElementById('submitBtn');
+    const form = document.getElementById('rechargeForm');
+
+    // Detect operator when mobile number is entered
+    mobileInput.addEventListener('input', async (e) => {
+      const mobile = e.target.value;
+
+      if (mobile.length === 10 && /^\d{10}$/.test(mobile)) {
+        try {
+          // Detect operator
+          const response = await fetch(`/api/recharge/operator/${mobile}`);
+          const data = await response.json();
+
+          if (data.success) {
+            selectedOperator = data.operator;
+            operatorDisplay.innerHTML = `<div class="operator-badge">📡 ${data.operator}</div>`;
+
+            // Fetch plans for this operator
+            await fetchPlans(data.operator);
+          }
+        } catch (error) {
+          console.error('Error detecting operator:', error);
+        }
+      } else {
+        operatorDisplay.innerHTML = '';
+        planSection.style.display = 'none';
+        selectedOperator = null;
+        selectedPlan = null;
+        amountInput.value = '';
+        checkFormValidity();
+      }
+    });
+
+    // Fetch recharge plans
+    async function fetchPlans(operator) {
+      plansList.innerHTML = '<div class="loading-plans">Loading plans...</div>';
+      planSection.style.display = 'block';
+
+      try {
+        const response = await fetch(`/api/recharge/plans/${operator}`);
+        const data = await response.json();
+
+        if (data.success && data.plans.length > 0) {
+          availablePlans = data.plans;
+          displayPlans(data.plans);
+        } else {
+          plansList.innerHTML = '<div class="loading-plans">No plans available</div>';
+        }
+      } catch (error) {
+        console.error('Error fetching plans:', error);
+        plansList.innerHTML = '<div class="loading-plans">Failed to load plans</div>';
+      }
+    }
+
+    // Display plans
+    function displayPlans(plans) {
+      plansList.innerHTML = '';
+
+      plans.forEach(plan => {
+        const planCard = document.createElement('div');
+        planCard.className = 'plan-card';
+        planCard.innerHTML = `
+          <div style="display: flex; justify-content: space-between; align-items: center;">
+            <div>
+              <div class="plan-amount">₹${plan.amount}</div>
+              <div class="plan-validity">${plan.validity} | ${plan.data}</div>
+              <div class="plan-description">${plan.description}</div>
+            </div>
+            <div style="font-size: 24px;">
+              ${selectedPlan && selectedPlan.id === plan.id ? '✅' : '⭕'}
+            </div>
+          </div>
+        `;
+
+        planCard.addEventListener('click', () => selectPlan(plan));
+        plansList.appendChild(planCard);
+      });
+    }
+
+    // Select a plan
+    function selectPlan(plan) {
+      selectedPlan = plan;
+      amountInput.value = plan.amount;
+
+      // Update UI
+      document.querySelectorAll('.plan-card').forEach(card => {
+        card.classList.remove('selected');
+      });
+      event.target.closest('.plan-card').classList.add('selected');
+
+      displayPlans(availablePlans);
+      checkFormValidity();
+    }
+
+    // Check form validity
+    function checkFormValidity() {
+      const isValid = mobileInput.value.length === 10 &&
+        selectedPlan &&
+        nameInput.value.trim();
+
+      submitBtn.disabled = !isValid;
+    }
+
+    // Listen to form changes
+    nameInput.addEventListener('input', checkFormValidity);
+
+    // Handle form submission
+    form.addEventListener('submit', (e) => {
+      e.preventDefault();
+
+      if (!selectedPlan || !selectedOperator) {
+        alert('Please select a recharge plan');
+        return;
+      }
+
+      // Prepare data for payment gateway
+      const mobile = mobileInput.value;
+      const name = nameInput.value;
+      const amount = amountInput.value;
+      const orderId = `RECH${Date.now()}`;
+      const description = `Mobile Recharge for ${mobile} - ${selectedOperator} - ${selectedPlan.validity}`;
+
+      // Store recharge details in sessionStorage for later use
+      sessionStorage.setItem('rechargeDetails', JSON.stringify({
+        mobile,
+        operator: selectedOperator,
+        planId: selectedPlan.id,
+        planDetails: selectedPlan,
+        customerName: name
+      }));
+
+      // Redirect to payment gateway with query parameters
+      window.location.href = `/payment-gateway?amount=${amount}&orderId=${orderId}&description=${encodeURIComponent(description)}&type=recharge`;
+    });
+
+  </script>
+</body>
+
+</html>

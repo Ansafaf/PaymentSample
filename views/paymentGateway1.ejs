@@ -1,0 +1,417 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>
+        <%= title || 'UPI Payment Gateway' %>
+    </title>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Arial, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 20px;
+        }
+
+        .container {
+            background: white;
+            border-radius: 20px;
+            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+            max-width: 500px;
+            width: 100%;
+            padding: 40px;
+        }
+
+        h1 {
+            text-align: center;
+            color: #333;
+            margin-bottom: 10px;
+            font-size: 28px;
+        }
+
+        .amount-display {
+            text-align: center;
+            font-size: 42px;
+            font-weight: bold;
+            color: #667eea;
+            margin: 20px 0;
+        }
+
+        .upi-info {
+            background: #f8f9fa;
+            padding: 20px;
+            border-radius: 12px;
+            margin: 20px 0;
+            text-align: center;
+        }
+
+        .upi-id {
+            font-size: 18px;
+            font-weight: 600;
+            color: #333;
+            margin: 10px 0;
+            word-break: break-all;
+        }
+
+        .qr-container {
+            background: white;
+            padding: 20px;
+            border-radius: 12px;
+            text-align: center;
+            margin: 20px 0;
+        }
+
+        #qrcode {
+            display: inline-block;
+            padding: 20px;
+            background: white;
+            border-radius: 8px;
+        }
+
+        .warning-box {
+            background: #fff3cd;
+            border: 2px solid #ffc107;
+            border-radius: 8px;
+            padding: 15px;
+            margin: 20px 0;
+            color: #856404;
+        }
+
+        .warning-box strong {
+            display: block;
+            margin-bottom: 5px;
+        }
+
+        .app-buttons {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 10px;
+            margin: 20px 0;
+        }
+
+        .app-btn {
+            padding: 15px;
+            border: 2px solid #e0e0e0;
+            border-radius: 10px;
+            background: white;
+            cursor: pointer;
+            font-size: 16px;
+            font-weight: 600;
+            transition: all 0.3s;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 8px;
+        }
+
+        .app-btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+        }
+
+        .app-btn.gpay {
+            border-color: #4285f4;
+            color: #4285f4;
+        }
+
+        .app-btn.phonepe {
+            border-color: #5f259f;
+            color: #5f259f;
+        }
+
+        .app-btn.paytm {
+            border-color: #00b9f5;
+            color: #00b9f5;
+        }
+
+        .app-btn.bhim {
+            border-color: #097bed;
+            color: #097bed;
+        }
+
+        .instructions {
+            background: #e3f2fd;
+            padding: 15px;
+            border-radius: 8px;
+            margin: 20px 0;
+            font-size: 14px;
+            color: #1565c0;
+        }
+
+        .instructions ol {
+            margin: 10px 0 0 20px;
+        }
+
+        .instructions li {
+            margin: 5px 0;
+        }
+
+        .copy-btn {
+            background: #667eea;
+            color: white;
+            border: none;
+            padding: 12px 24px;
+            border-radius: 8px;
+            cursor: pointer;
+            font-size: 16px;
+            font-weight: 600;
+            width: 100%;
+            margin-top: 10px;
+            transition: background 0.3s;
+        }
+
+        .copy-btn:hover {
+            background: #5568d3;
+        }
+
+        .copy-btn:active {
+            transform: scale(0.98);
+        }
+
+        .success-message {
+            background: #d4edda;
+            color: #155724;
+            padding: 10px;
+            border-radius: 8px;
+            margin-top: 10px;
+            display: none;
+        }
+
+        .order-details {
+            background: #f8f9fa;
+            padding: 15px;
+            border-radius: 8px;
+            margin: 20px 0;
+            font-size: 14px;
+        }
+
+        .order-details div {
+            display: flex;
+            justify-content: space-between;
+            margin: 8px 0;
+        }
+
+        .order-details strong {
+            color: #333;
+        }
+
+        @media (max-width: 600px) {
+            .container {
+                padding: 20px;
+            }
+
+            .amount-display {
+                font-size: 32px;
+            }
+
+            .app-buttons {
+                grid-template-columns: 1fr;
+            }
+        }
+    </style>
+</head>
+
+<body>
+    <div class="container">
+        <h1>🔐 UPI Payment</h1>
+        <div class="amount-display">₹ <%= amount %>
+        </div>
+
+        <!-- Order Details -->
+        <div class="order-details">
+            <div>
+                <span>Order ID:</span>
+                <strong>
+                    <%= orderId %>
+                </strong>
+            </div>
+            <% if (description) { %>
+                <div>
+                    <span>Description:</span>
+                    <strong>
+                        <%= description %>
+                    </strong>
+                </div>
+                <% } %>
+                    <% if (type) { %>
+                        <div>
+                            <span>Type:</span>
+                            <strong>
+                                <%= type %>
+                            </strong>
+                        </div>
+                        <% } %>
+        </div>
+
+        <div class="upi-info">
+            <div style="font-size: 14px; color: #666; margin-bottom: 5px;">Pay to</div>
+            <div style="font-size: 20px; font-weight: 700; color: #333;">
+                <%= ownerName %>
+            </div>
+            <div class="upi-id">
+                <%= upiId %>
+            </div>
+        </div>
+
+        <!-- Warning for large amounts -->
+        <% if (showAmountWarning || amount> 100000) { %>
+            <div class="warning-box">
+                <strong>⚠️ Important Note:</strong>
+                <p>Google Pay has a daily limit of ₹1,00,000 for P2P payments. If you see "limit exceeded", please use
+                    PhonePe, Paytm, or scan the QR code with another UPI app.</p>
+            </div>
+            <% } %>
+
+                <!-- QR Code -->
+                <div class="qr-container">
+                    <div style="font-size: 16px; font-weight: 600; margin-bottom: 15px; color: #333;">
+                        Scan QR Code with Any UPI App
+                    </div>
+                    <div id="qrcode"></div>
+                    <button class="copy-btn" onclick="copyUpiId()">📋 Copy UPI ID</button>
+                    <div class="success-message" id="copySuccess">✓ UPI ID copied to clipboard!</div>
+                </div>
+
+                <!-- Single UPI Button -->
+                <div style="margin-top: 25px;">
+                    <button class="app-btn gpay" onclick="payWithAnyApp()"
+                        style="width: 100%; border-color: #667eea; color: #fff; background: #667eea; font-size: 18px; padding: 18px;">
+                        <span>📱</span> Pay via UPI App
+                    </button>
+                    <p style="text-align: center; margin-top: 10px; font-size: 13px; color: #666;">
+                        Tap to choose Google Pay, PhonePe, Paytm, etc.
+                    </p>
+                </div>
+
+                <!-- Instructions -->
+                <div class="instructions">
+                    <strong>📝 How to Pay:</strong>
+                    <ol>
+                        <li>Scan QR code or click app button</li>
+                        <li>Verify amount: ₹<%= amount %>
+                        </li>
+                        <li>Complete payment in your UPI app</li>
+                        <li>Return here after successful payment</li>
+                    </ol>
+                </div>
+    </div>
+
+    <script>
+        // Configuration from backend
+        const config = {
+            upiId: '<%= upiId %>',
+            ownerName: '<%= ownerName %>',
+            amount: '<%= amount %>',
+            orderId: '<%= orderId %>',
+            upiString: '<%= upiString || "" %>',
+            upiApps: '<% - JSON.stringify(upiApps || {}) %>'
+        };
+
+        // Generate UPI string if not provided
+        function generateUpiString() {
+            if (config.upiString) {
+                return config.upiString;
+            }
+
+            const params = new URLSearchParams();
+            params.append('pa', config.upiId);
+            params.append('pn', encodeURIComponent(config.ownerName));
+            params.append('cu', 'INR');
+            params.append('mode', '02'); // Person-to-person mode
+
+            // Only add amount if under 1 lakh (Google Pay limit)
+            if (config.amount <= 100000) {
+                params.append('am', config.amount.toFixed(2));
+            }
+
+            return `upi://pay?${params.toString()}`;
+        }
+
+        // Generate QR Code
+        const upiString = generateUpiString();
+        new QRCode(document.getElementById("qrcode"), {
+            text: upiString,
+            width: 200,
+            height: 200,
+            colorDark: "#000000",
+            colorLight: "#ffffff",
+            correctLevel: QRCode.CorrectLevel.M
+        });
+
+        // Open generic UPI intent
+        function payWithAnyApp() {
+            console.log('Opening Generic UPI Intent:', upiString);
+            window.location.href = upiString;
+
+            // Fallback for desktop or if no app handles it
+            setTimeout(() => {
+                if (document.hidden) return; // App likely opened
+                alert('If a UPI app did not open, please scan the QR code instead.');
+            }, 2500);
+        }
+
+        // Copy UPI ID to clipboard
+        function copyUpiId() {
+            const upiId = config.upiId;
+
+            if (navigator.clipboard && navigator.clipboard.writeText) {
+                navigator.clipboard.writeText(upiId).then(() => {
+                    showCopySuccess();
+                }).catch(err => {
+                    fallbackCopy(upiId);
+                });
+            } else {
+                fallbackCopy(upiId);
+            }
+        }
+
+        // Fallback copy method for older browsers
+        function fallbackCopy(text) {
+            const textarea = document.createElement('textarea');
+            textarea.value = text;
+            textarea.style.position = 'fixed';
+            textarea.style.opacity = '0';
+            document.body.appendChild(textarea);
+            textarea.select();
+
+            try {
+                document.execCommand('copy');
+                showCopySuccess();
+            } catch (err) {
+                alert('Failed to copy. Please copy manually: ' + text);
+            }
+
+            document.body.removeChild(textarea);
+        }
+
+        // Show copy success message
+        function showCopySuccess() {
+            const msg = document.getElementById('copySuccess');
+            msg.style.display = 'block';
+            setTimeout(() => {
+                msg.style.display = 'none';
+            }, 3000);
+        }
+
+        // Log for debugging
+        console.log('UPI Payment Configuration:', {
+            upiString,
+            links: upiLinks,
+            config
+        });
+    </script>
+</body>
+
+</html>
