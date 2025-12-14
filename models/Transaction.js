@@ -1,47 +1,24 @@
-const mongoose = require('mongoose');
+// // Stubbed Transaction model - Mongoose disabled
+// // This file provides a mock implementation to avoid runtime errors when Mongoose is commented out.
 
-const transactionSchema = new mongoose.Schema({
-    orderId: {
-        type: String,
-        required: true,
-        unique: true
-    },
-    amount: {
-        type: Number,
-        required: true
-    },
-    paymentMethod: {
-        type: String,
-        required: true,
-        enum: ['UPI', 'CARD', 'NETBANKING', 'WALLET']
-    },
-    paymentDetails: {
-        type: mongoose.Schema.Types.Mixed
-    },
-    status: {
-        type: String,
-        required: true,
-        enum: ['pending', 'success', 'failed', 'cancelled'],
-        default: 'pending'
-    },
-    customerInfo: {
-        name: String,
-        email: String,
-        phone: String
-    },
-    description: String,
-    failureReason: String,
-    idempotencyKey: {
-        type: String,
-        unique: true,
-        sparse: true // Allows null/undefined for old records
-    },
-    gatewayPaymentId: String,
-    gatewayStatus: String
-}, {
-    timestamps: true
-});
+// class TransactionMock {
+//     constructor(data) {
+//         Object.assign(this, data);
+//         // Assign default fields if not provided
+//         this.status = this.status || 'pending';
+//         this.createdAt = this.createdAt || new Date().toISOString();
+//     }
+//     async save() {
+//         // In a real DB, this would persist. Here we just return the instance.
+//         return this;
+//     }
+// }
 
-transactionSchema.index({ createdAt: -1 });
+// // Static mock methods
+// TransactionMock.findOne = async (query) => null;
+// TransactionMock.findById = async (id) => null;
+// TransactionMock.findOneAndUpdate = async (filter, update) => null;
+// TransactionMock.find = async (query) => [];
+// TransactionMock.create = async (data) => new TransactionMock(data);
 
-module.exports = mongoose.model('Transaction', transactionSchema);
+// module.exports = TransactionMock;

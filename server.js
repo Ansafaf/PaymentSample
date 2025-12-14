@@ -11,16 +11,16 @@ app.use(bodyParser.json());
 app.use(bodyParser.urlencoded({ extended: true }));
 app.use(express.static(path.join(__dirname, 'public')));
 
-const mongoose = require('mongoose'); //mongooose
+// const mongoose = require('mongoose'); //mongooose
 
-// Connect to MongoDB for Payment Gateway
-mongoose.connect(process.env.MONGO_URI || 'mongodb://localhost:27017/payment-app')
-    .then(() => console.log('✅ MongoDB Connected'))
-    .catch(err => console.error('❌ MongoDB Connection Error:', err));
+// // Connect to MongoDB for Payment Gateway
+// mongoose.connect(process.env.MONGO_URI || 'mongodb://localhost:27017/payment-app')
+//     .then(() => console.log('✅ MongoDB Connected'))
+//     .catch(err => console.error('❌ MongoDB Connection Error:', err));
 
-// Database Connection (Legacy In-Memory)
+// // Database Connection (Legacy In-Memory)
 // Helper preserved if needed by other routes, but Mongoose is primary for Gateway
-require('./database/db');
+// require('./database/db');
 
 // Set EJS as view engine
 app.set('view engine', 'ejs');
