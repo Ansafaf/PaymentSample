@@ -253,7 +253,7 @@ exports.createCashfreeOrder = async (req, res) => {
         // Return ONLY what frontend needs
         return res.json({
             success: true,
-            payment_session_id: data.payment_session_id,
+            payment_session_id: data.payment_,
             order_id: orderId
         });
 
