@@ -162,11 +162,11 @@ exports.createCashfreeOrder = async (req, res) => {
             secretKey = isProd ? process.env.PROD_SECRET_KEY : process.env.TEST_SECRET_KEY;
             baseUrl = isProd ? 'https://api.cashfree.com/pg' : 'https://sandbox.cashfree.com/pg';
         } else {
-            // Fallback to legacy config
+            // Standardize with OwnerConfig
             appId = owner.cashfreeAppId;
             secretKey = owner.cashfreeSecretKey;
             baseUrl = owner.cashfreeEnv === 'PROD' ? 'https://api.cashfree.com/pg' : 'https://sandbox.cashfree.com/pg';
-            console.warn("Using Legacy Config (owner.js) - Please migrate to .env for security");
+            console.log(`Using credentials for environment: ${owner.cashfreeEnv}`);
         }
 
         if (!appId || !secretKey) {
@@ -253,7 +253,7 @@ exports.createCashfreeOrder = async (req, res) => {
         // Return ONLY what frontend needs
         return res.json({
             success: true,
-            payment_session_id: data.payment_,
+            payment_session_id: data.payment_session_id,
             order_id: orderId
         });
 
