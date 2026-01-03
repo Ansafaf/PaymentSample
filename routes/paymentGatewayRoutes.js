@@ -7,19 +7,17 @@ const {
     verifyCashfreePayment,
     getTransactionStatus,
     renderPaymentSuccess,
-    downloadReceipt
+    downloadReceipt,
+    verifyManualPayment
 } = require('../controllers/paymentGatewayController.js');
 
 // Render payment gateway page
 router.get('/payment-gateway', renderPaymentGateway);
 
-// Cashfree Order & Verify
-router.post('/payment/create-order', createCashfreeOrder);
-router.post('/payment/verify', verifyCashfreePayment); // Webhook
-router.get('/payment/verify', verifyCashfreePayment); // Return URL redirection
-
 // Legacy/Fallback process paths (keeping if needed)
+
 router.post('/payment/upi', processUpiPayment);
+router.post('/payment/verify-manual', verifyManualPayment);
 
 // Get transaction status
 router.get('/payment/status/:transactionId', getTransactionStatus);

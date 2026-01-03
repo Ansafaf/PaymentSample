@@ -5,6 +5,11 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Payment Gateway | Safe and Secure</title>
+    <!-- jQuery and jQuery Confirm -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jquery/3.6.0/jquery.min.js"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/jquery-confirm/3.3.2/jquery-confirm.min.css">
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jquery-confirm/3.3.2/jquery-confirm.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
     <style>
         * {
             margin: 0;
@@ -606,13 +611,19 @@
             <div class="tab-content active" data-content="upi">
                 <div class="upi-app-section">
                     <h3>Pay with UPI</h3>
-                    <p>Click the button below to pay using any UPI app via Cashfree</p>
-                    <button class="btn-primary" onclick="startPayment('upi')">
+                    <p>Click the button below to pay using any UPI app</p>
+                    <a href="<%= upiMeUrl %>" class="btn-primary" style="text-decoration: none; display: inline-block;">
                         Pay via UPI
-                    </button>
+                    </a>
+
                     <p style="margin-top: 20px; font-size: 14px; opacity: 0.9;">
                         Supports PhonePe, Google Pay, Paytm, BHIM and all UPI apps
                     </p>
+                    <div style="display:none;">
+                        <!-- Triggers for the script -->
+                        <button id="upiwc-cancel-payment">Cancel</button>
+                        <button class="upiwc-return-link">Return</button>
+                    </div>
                 </div>
 
                 <div class="security-note" style="margin-top: 30px;">
@@ -625,7 +636,6 @@
             <div class="tab-content" data-content="card">
                 <h3 class="section-title">Credit/Debit Card</h3>
                 <form class="card-form" id="cardForm">
-                    <!-- Inputs kept for UI look, but we intercept submit -->
                     <div class="form-group">
                         <label class="form-label">Card Number</label>
                         <div class="card-number-wrapper">
@@ -651,14 +661,17 @@
 
                     <div class="security-note">
                         <span>🔒</span>
-                        <span>Redirects to Cashfree Secure Gateway</span>
+                        <span>Secure encrypted payment</span>
                     </div>
 
-                    <button type="button" class="btn-submit" onclick="startPayment('card')">Pay ₹<%= typeof amount
-                            !=='undefined' ? amount : '0.00' %>
+                    <button type="button" class="btn-submit" disabled>Pay ₹<%= typeof amount !=='undefined' ? amount
+                            : '0.00' %>
                     </button>
+                    <p style="margin-top: 10px; color: #666; font-size: 14px; text-align: center;">Currently
+                        unavailable. Please use UPI.</p>
                 </form>
             </div>
+
 
             <!-- Net Banking Tab Content -->
             <div class="tab-content" data-content="netbanking">
@@ -714,87 +727,470 @@
         </div>
     </main>
 
-    <script src="https://sdk.cashfree.com/js/v3/cashfree.js"></script>
+
+    <!-- Templates for jQuery Confirm Modal -->
+    <div style="display: none;">
+        <div class="upiwc-modal-header">Complete Payment</div>
+        <div class="upiwc-modal-content">
+            <!-- STEP 1: Apps & QR -->
+            <div class="upiwc-payment-container">
+                <div class="upiwc-payment-info" style="text-align: center; margin-bottom: 20px;">
+                    <p>Scan the QR code or select an app to pay</p>
+                    <div class="upiwc-payment-upi-id"
+                        style="font-weight: bold; font-size: 18px; margin: 10px 0; cursor: pointer; color: #2874f0;"
+                        title="Click to Copy">
+                        <%= upiwcData.payee_vpa %> 📋
+                    </div>
+                </div>
+
+                <div class="upiwc-payment-qr-code" id="upiwc-payment-qr-code"
+                    style="display: flex; justify-content: center; margin-bottom: 20px;">
+                    <!-- QR Code Generated Here -->
+                </div>
+
+                <div class="upiwc-payment-actions" style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px;">
+                    <button class="upiwc-payment-btn btn-primary" data-type="gpay"
+                        style="width: 100%; margin: 5px 0; background: white; color: #333; border: 1px solid #ddd;">
+                        Google Pay
+                    </button>
+                    <button class="upiwc-payment-btn btn-primary" data-type="phonepe"
+                        style="width: 100%; margin: 5px 0; background: white; color: #333; border: 1px solid #ddd;">
+                        PhonePe
+                    </button>
+                    <button class="upiwc-payment-btn btn-primary" data-type="paytm"
+                        style="width: 100%; margin: 5px 0; background: white; color: #333; border: 1px solid #ddd;">
+                        Paytm
+                    </button>
+                    <button class="upiwc-payment-btn btn-primary" data-type="bhim"
+                        style="width: 100%; margin: 5px 0; background: white; color: #333; border: 1px solid #ddd;">
+                        BHIM / UPI
+
+                    </button>
+
+                </div>
+
+                <div class="upiwc-payment-intent-error error-message" style="text-align: center; margin-top: 10px;">
+                </div>
+            </div>
+
+            <!-- STEP 2: Confirmation / UTR -->
+            <div class="upiwc-payment-confirm" style="display: none;">
+                <p>Please enter the Transaction ID (UTR) to confirm your payment.</p>
+                <form id="upiwc-payment-confirm-form">
+                    <div class="form-group">
+                        <label class="form-label">Transaction ID (12 Digits)</label>
+                        <input type="text" class="form-control" id="upiwc-payment-transaction-number"
+                            name="upiwc_transaction_id" placeholder="e.g. 123456789012" maxlength="12"
+                            onkeypress="return upiwcIsNumber(event)">
+                    </div>
+
+                    <!-- Optional Image Upload if configured -->
+                    <div class="form-group" style="display: none;"> <!-- Hidden by default as per config -->
+                        <label class="form-label">Upload Screenshot</label>
+                        <input type="file" class="form-control" id="upiwc-payment-file" name="upiwc_transaction_image"
+                            accept="image/*">
+                    </div>
+
+                    <div class="upiwc-payment-error error-message"></div>
+                </form>
+            </div>
+        </div>
+
+        <!-- Loading State -->
+        <div id="upiwc-processing" style="display: none;">Processing...</div>
+        <div class="upiwc-waiting-text" style="display: none;"></div>
+    </div>
+
+    <!-- Pass Data to JS -->
     <script>
-        // Tab switching
-        document.querySelectorAll('.tab-item').forEach(tab => {
-            tab.addEventListener('click', function () {
-                const tabName = this.dataset.tab;
+        var upiwcData = "<% JSON.stringify(upiwcData || {}) %>";
 
-                document.querySelectorAll('.tab-item').forEach(t => t.classList.remove('active'));
-                document.querySelectorAll('.tab-content').forEach(c => c.classList.remove('active'));
+        // Ensure order_amount is string
+        if (upiwcData.order_amount) {
+            upiwcData.order_amount = upiwcData.order_amount.toString();
+        }
 
-                this.classList.add('active');
-                document.querySelector(`[data-content="${tabName}"]`).classList.add('active');
+        // Add required nonce if missing
+        if (upiwcData) {
+            upiwcData.nonce = upiwcData.nonce || 'xyz';
+        }
+    </script>
+
+
+
+    <script>
+        // User Provided Functionality
+        (function ($) {
+            "use strict";
+
+            if (typeof upiwcData === 'undefined') {
+                return false;
+            }
+
+            // Robust URI component encoding
+            let pa = upiwcData.payee_vpa;
+            let pn = encodeURIComponent(upiwcData.payee_name);
+            let am = upiwcData.order_amount;
+            let tr = upiwcData.order_key ? upiwcData.order_key.replace('wc_order_', '') : '';
+            let tn = encodeURIComponent(upiwcData.payee_name + ' OrderId:' + upiwcData.order_number);
+
+            // Construct Link
+            let paymentLink = `pay?pa=${pa}&pn=${pn}&am=${am}&tr=${tr}&tn=${tn}&cu=INR`;
+
+            // Only add Merchant Code if it exists and is not '0000'
+            if (upiwcData.mc_code && upiwcData.mc_code !== '0000') {
+                paymentLink += `&mc=${upiwcData.mc_code}`;
+            }
+
+            // Only add mode/orgid if specifically required/configured
+            // paymentLink += `&mode=01`; // Often causes issues if not a valid merchant
+            // paymentLink += `&orgid=000000`; // Often causes issues
+
+            // Note: We don't need global replace(/\s/g,'') if we encode components properly.
+            // But to be 100% safe to 'upi://' prefix, we ensure it's a valid URI.
+            // paymentLink = encodeURI(paymentLink); // Not needed if components are encoded
+
+            $('body').on('contextmenu', '.upiwc-payment-qr-code img', function (e) {
+                return false;
             });
-        });
 
-        // UI Selection Helper
-        function selectItem(element, type) {
-            const container = type === 'bank' ? '#bankGrid' : '#walletGrid';
-            document.querySelectorAll(`${container} > div`).forEach(el => el.classList.remove('selected'));
-            element.classList.add('selected');
-        }
+            $('body').on('click', '#upiwc-cancel-payment', function (e) {
+                e.preventDefault();
+                if (upiwcData.cancel_url) window.location = upiwcData.cancel_url;
+            });
 
-        // CASHFREE INTEGRATION
-        // Initialize Cashfree
-        // Note: Mode should match what is set in backend
-        // We can pass environment from backend to be sure
-        const cashfreeMode = "<%= typeof cashfreeEnv !=='undefined' ? cashfreeEnv.toLowerCase() : 'sandbox' %>";
-        const cashfree = Cashfree({
-            mode: cashfreeMode === 'test' ? 'sandbox' : 'production'
-        });
+            $('body').on('click', '.upiwc-return-link', function (e) {
+                e.preventDefault();
+                if (upiwcData.payment_url) window.location = upiwcData.payment_url;
+            });
 
-        // Generate UUIDv4 for Idempotency
-        function uuidv4() {
-            return ([1e7] + -1e3 + -4e3 + -8e3 + -1e11).replace(/[018]/g, c =>
-                (c ^ crypto.getRandomValues(new Uint8Array(1))[0] & 15 >> c / 4).toString(16)
-            );
-        }
+            $('body').on('click', '#upiwc-confirm-payment', function (e) {
+                e.preventDefault();
 
-        async function startPayment(method) {
-            const amount = "<%= typeof amount !=='undefined' ? amount : '299' %>";
-            // Check if we have an existing idempotency key in session or generate new
-            let idempotencyKey = sessionStorage.getItem('txn_idempotency_key');
-            if (!idempotencyKey) {
-                idempotencyKey = uuidv4();
-                sessionStorage.setItem('txn_idempotency_key', idempotencyKey);
-            }
-
-            try {
-                // 1. Create Order & Get Session
-                const orderRes = await fetch('/payment/create-order', {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({
-                        amount,
-                        method,
-                        idempotencyKey,
-                        customerName: "User", // Can be dynamic
-                        customerPhone: "9999999999",
-                        customerEmail: "user@example.com"
-                    })
-                });
-                const orderData = await orderRes.json();
-
-                if (!orderData.success) {
-                    alert('Error creating order: ' + orderData.message);
-                    return;
+                let amountContent = '<span class="payment-amount">₹ ' + upiwcData.order_amount + '</span>';
+                if (upiwcData.payer_vpa != '' && upiwcData.payer_vpa) {
+                    amountContent += '<span class="upi-id">' + upiwcData.payer_vpa + '</span>';
                 }
+                let paymentModal = $.confirm({
+                    title: $('body').find('.upiwc-modal-header').html(),
+                    content: $('body').find('.upiwc-modal-content').html(),
+                    useBootstrap: false,
+                    animation: 'scale',
+                    boxWidth: '90%', // Mobile responsive
+                    maxWidth: '400px', // Max width
+                    draggable: false,
+                    offsetBottom: 0,
+                    offsetTop: 0,
+                    closeIcon: true,
+                    bgOpacity: .8,
+                    lazyOpen: true,
+                    theme: upiwcData.theme || 'modern',
+                    onOpenBefore: function () {
+                        // Fix for responsive width
+                        this.$el.find('.jconfirm-box').css({ 'max-width': '400px', 'width': '100%' });
+                        this.$el.addClass('upiwc-payment-modal');
 
-                // 2. Open Cashfree Checkout
-                cashfree.checkout({
-                    paymentSessionId: orderData.payment_session_id,
-                    redirectTarget: "_self" // Redirect in same tab
+                        $(document).trigger('upiwcOnOpenBefore', [this]);
+                    },
+                    onContentReady: function () {
+                        $(document).trigger('upiwcBeforeContentReady', [this]);
+
+                        let self = this;
+                        let timeoutIntent, timeoutCopy;
+
+                        self.$content.find('.upiwc-payment-upi-id').on('click', function (e) {
+                            e.preventDefault();
+                            clearTimeout(timeoutCopy);
+
+                            navigator.clipboard.writeText(upiwcData.payee_vpa).then(function () {
+                                console.log('Copying to clipboard was successful!');
+                            }, function (err) {
+                                console.error('Could not copy text: ', err);
+                            });
+
+                            let el = $(this)
+                            let originalText = el.text();
+                            el.text('Copied!');
+                            timeoutCopy = setTimeout(function () {
+                                el.html(upiwcData.payee_vpa + ' 📋'); // Restore with icon
+                            }, 1000);
+                        });
+
+                        self.$content.find('#upiwc-payment-transaction-number').on('input', function (e) {
+                            self.$content.find('.upiwc-payment-error').hide();
+                        });
+
+                        self.$content.find('#upiwc-payment-file').on('change', function (e) {
+                            self.$content.find('.upiwc-payment-error').hide();
+                        });
+
+                        // Generate QR inside the modal
+                        if (self.$content.find('#upiwc-payment-qr-code').length) {
+                            self.$content.find('#upiwc-payment-qr-code').empty(); // Clear previous
+                            new QRCode(self.$content.find('#upiwc-payment-qr-code')[0], {
+                                text: 'upi://' + paymentLink,
+                                width: 200,
+                                height: 200,
+                                correctLevel: QRCode.CorrectLevel.H,
+                                quietZone: 8
+                            });
+                        }
+
+                        // We can get src after generation
+                        // let qrCodeSrc = self.$content.find( '#upiwc-payment-qr-code img' ).attr( 'src' );
+
+                        self.$content.find('.upiwc-payment-btn').on('click', function (e) {
+                            e.preventDefault();
+                            clearTimeout(timeoutIntent);
+                            self.$content.find('.upiwc-payment-intent-error').hide();
+
+                            let type = $(this).data('type');
+                            let intentLink = upiwcIntent(paymentLink, type);
+                            console.log("Opening Intent:", intentLink);
+
+                            // Try to open
+                            window.location.href = intentLink;
+
+                            timeoutIntent = setTimeout(function () {
+                                // Just show a helper message, cannot detect close reliably
+                                self.$content.find('.upiwc-payment-intent-error').text('If app did not open, scan QR code.').show();
+                            }, 2500);
+                        });
+
+                        let btnShowInterval = parseInt(upiwcData.btn_show_interval);
+                        if (btnShowInterval && btnShowInterval >= 1000) {
+                            if (upiwcData.btn_timer == 1) {
+                                upiwcStartTimer(btnShowInterval / 1000, document.querySelector('.btn.upiwc-next'));
+                            }
+                            setTimeout(function () {
+                                self.buttons.nextStep.setText('Proceed to Next');
+                                self.buttons.nextStep.enable();
+                            }, btnShowInterval);
+                        } else {
+                            self.buttons.nextStep.setText('I have Paid');
+                            self.buttons.nextStep.enable();
+                        }
+
+                        $(document).trigger('upiwcAfterContentReady', [this]);
+                    },
+                    onClose: function () {
+                        $('#upiwc-processing').hide();
+                        $('#upiwc-confirm-payment, #upiwc-cancel-payment, .upiwc-return-link').show();
+                        $('.upiwc-waiting-text').text('Please click the Pay Now button below to complete the payment against this order.');
+
+                        $(document).trigger('upiwcOnClose', [this]);
+                    },
+                    onAction: function (btnName) {
+                        $(document).trigger('upiwcOnAction', [this, btnName]);
+                    },
+                    buttons: {
+                        amount: {
+                            text: amountContent,
+                            btnClass: 'upiwc-amount',
+                            action: function () {
+                                return false;
+                            }
+                        },
+                        nextStep: {
+                            text: 'Waiting...',
+                            btnClass: 'upiwc-next btn-primary',
+                            isDisabled: true, // Enabled after timeout or immediately
+                            action: function () {
+                                $(document).trigger('upiwcBeforeNextStepAction', [this]);
+
+                                let self = this;
+                                self.$content.find('.upiwc-payment-confirm').show();
+                                self.$content.find('.upiwc-payment-info, .upiwc-payment-qr-code, .upiwc-payment-actions, .upiwc-payment-container').hide(); // removed upiwc-show class check
+                                self.$closeIcon.hide();
+
+                                self.buttons.amount.hide();
+                                self.buttons.nextStep.hide();
+                                self.buttons.back.show();
+                                self.buttons.confirm.show();
+
+                                $(document).trigger('upiwcAfterNextStepAction', [this]);
+                                return false;
+                            }
+                        },
+                        back: {
+                            text: 'Back',
+                            isHidden: true,
+                            btnClass: 'upiwc-back btn-secondary',
+                            action: function () {
+                                $(document).trigger('upiwcBeforeBackAction', [this]);
+
+                                let self = this;
+                                self.$content.find('.upiwc-payment-confirm').hide();
+                                self.$content.find('.upiwc-payment-info, .upiwc-payment-qr-code, .upiwc-payment-actions, .upiwc-payment-container').show();
+                                self.buttons.amount.show();
+                                self.buttons.nextStep.show();
+                                self.buttons.back.hide();
+                                self.buttons.confirm.hide();
+                                self.$closeIcon.show();
+
+                                $(document).trigger('upiwcAfterBackAction', [this]);
+                                return false;
+                            }
+                        },
+                        confirm: {
+                            text: 'Confirm',
+                            btnClass: 'upiwc-confirm btn-submit',
+                            isHidden: true,
+                            action: function () {
+                                $(document).trigger('upiwcBeforeConfirmAction', [this]);
+
+                                let self = this;
+                                let utr_field = self.$content.find('#upiwc-payment-transaction-number');
+                                let utr_image = self.$content.find('#upiwc-payment-file');
+
+                                if (utr_field.length > 0) {
+                                    let tran_id = utr_field.val();
+
+                                    if (tran_id != '' && tran_id.length != 12) {
+                                        self.$content.find('.upiwc-payment-error').text('Transaction ID should be of 12 digits!').show();
+                                        return false;
+                                    }
+
+                                    if (upiwcData.transaction_id === 'show_require' && tran_id == '') {
+                                        self.$content.find('.upiwc-payment-error').text('Transaction ID is required!').show();
+                                        return false;
+                                    }
+                                }
+
+                                if (utr_image.length > 0 && upiwcData.transaction_image === 'show_require') {
+                                    var fileInput = utr_image[0];
+
+                                    if (!fileInput.files.length) {
+                                        self.$content.find('.upiwc-payment-error').text('File is required!').show();
+                                        return false;
+                                    }
+                                }
+
+                                utr_field.attr('readonly', 'readonly');
+                                self.buttons.confirm.disable();
+                                self.buttons.back.disable();
+                                self.buttons.confirm.setText('Processing...');
+
+                                let upiForm = self.$content.find('#upiwc-payment-confirm-form');
+                                // Prevent actual form submit, use fetch/ajax
+                                // upiForm.attr( 'method', 'POST' );
+                                // upiForm.attr( 'action', upiwcData.callback_url );
+                                // upiForm.submit();
+
+                                // AJAX Submission
+                                const txnId = utr_field.val();
+                                fetch(upiwcData.callback_url, {
+                                    method: 'POST',
+                                    headers: {
+                                        'Content-Type': 'application/json'
+                                    },
+                                    body: JSON.stringify({
+                                        orderId: upiwcData.order_key,
+                                        transactionId: txnId,
+                                        amount: upiwcData.order_amount
+                                    })
+                                })
+                                    .then(res => res.json())
+                                    .then(data => {
+                                        if (data.success) {
+                                            window.location.href = '/payment/success/' + upiwcData.order_key; // Or appropriate success page
+                                        } else {
+                                            self.$content.find('.upiwc-payment-error').text(data.message || 'Verification failed').show();
+                                            utr_field.removeAttr('readonly');
+                                            self.buttons.confirm.enable();
+                                            self.buttons.back.enable();
+                                            self.buttons.confirm.setText('Confirm');
+                                        }
+                                    })
+                                    .catch(err => {
+                                        console.error(err);
+                                        self.$content.find('.upiwc-payment-error').text('Network Error').show();
+                                        utr_field.removeAttr('readonly');
+                                        self.buttons.confirm.enable();
+                                        self.buttons.back.enable();
+                                        self.buttons.confirm.setText('Confirm');
+                                    });
+
+                                $(document).trigger('upiwcAfterConfirmAction', [this]);
+                                return false;
+                            }
+                        }
+                    }
                 });
+                paymentModal.open();
 
-                // Clear idempotency key after successful launch (or keep until success page)
-                // sessionStorage.removeItem('txn_idempotency_key');
+                $('#upiwc-processing').show();
+                // $( '#upiwc-confirm-payment, #upiwc-cancel-payment, .upiwc-return-link' ).hide();
+                $('.upiwc-waiting-text').text('Please wait and don\'t press back or refresh this page while we are processing your payment...');
+            });
 
-            } catch (err) {
-                console.error(err);
-                alert('Something went wrong. Please try again.');
+            // Not needed here as we init inside modal
+            // if ( $( '#upiwc-payment-qr-code' ).length ) { ... }
+
+        })(jQuery);
+
+        function upiwcIntent(link, type) {
+            let prefix = 'upi://';
+            switch (type) {
+                case 'gpay':
+                    prefix = 'gpay://upi/';
+                    break;
+                case 'phonepe':
+                    prefix = 'phonepe://';
+                    break;
+                case 'paytm':
+                    prefix = 'paytmmp://';
+                    break;
+                case 'bhim':
+                    prefix = 'upi://';
+                    break;
+                default:
+                    prefix = 'upi://';
             }
+
+            return prefix + link;
+        }
+
+        function upiwcIsNumber(evt) {
+            evt = (evt) ? evt : window.event;
+            let charCode = (evt.which) ? evt.which : evt.keyCode;
+            if (8 != charCode && 0 != charCode && charCode > 31 && (charCode < 48 || charCode > 57)) {
+                return false;
+            }
+            return true;
+        }
+
+        function upiwcStartTimer(duration, display) {
+            let start = Date.now(),
+                diff,
+                minutes,
+                seconds,
+                timerInterval;
+
+            function timer() {
+                diff = duration - (((Date.now() - start) / 1000) | 0);
+
+                minutes = (diff / 60) | 0;
+                seconds = (diff % 60) | 0;
+
+                minutes = minutes < 10 ? "0" + minutes : minutes;
+                seconds = seconds < 10 ? "0" + seconds : seconds;
+
+                display.textContent = 'Waiting... (' + minutes + ":" + seconds + ')';
+
+                if (diff <= 0) {
+                    start = Date.now() + 1000;
+                }
+            };
+
+            clearTimeout(timerInterval)
+
+            timer();
+
+            timerInterval = setInterval(timer, 1000);
+            setTimeout(function () {
+                clearTimeout(timerInterval)
+            }, duration * 1000);
         }
     </script>
 </body>
