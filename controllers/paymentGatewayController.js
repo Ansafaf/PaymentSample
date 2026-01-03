@@ -143,6 +143,189 @@ exports.verifyUpiId = async (req, res) => {
     }
 };
 
+// Create Cashfree Order
+exports.createCashfreeOrder = async (req, res) => {
+    try {
+        const { amount, method, orderId: passedOrderId, idempotencyKey } = req.body;
+
+        // Idempotency Check
+        if (idempotencyKey) {
+            const existingTxn = await Transaction.findOne({ idempotencyKey });
+            if (existingTxn) {
+                // If we have a session ID already, return it
+                if (existingTxn.paymentDetails && existingTxn.paymentDetails.payment_session_id) {
+                    return res.json({
+                        success: true,
+                        payment_session_id: existingTxn.paymentDetails.payment_session_id,
+                        order_id: existingTxn.orderId,
+                        message: "Retrieved existing session (Idempotent)"
+                    });
+                }
+            }
+        }
+
+        if (!amount || isNaN(Number(amount))) return res.status(400).json({ success: false, message: 'Invalid amount' });
+
+        // Select Credentials (Env > Fallback Legacy)
+        const isProd = process.env.NODE_ENV === 'production';
+        let appId, secretKey, baseUrl;
+
+        if (process.env.TEST_APP_ID || process.env.PROD_APP_ID) {
+            appId = isProd ? process.env.PROD_APP_ID : process.env.TEST_APP_ID;
+            secretKey = isProd ? process.env.PROD_SECRET_KEY : process.env.TEST_SECRET_KEY;
+            baseUrl = isProd ? 'https://api.cashfree.com/pg' : 'https://sandbox.cashfree.com/pg';
+        } else {
+            // Fallback to legacy config
+            appId = owner.cashfreeAppId;
+            secretKey = owner.cashfreeSecretKey;
+            baseUrl = owner.cashfreeEnv === 'PROD' ? 'https://api.cashfree.com/pg' : 'https://sandbox.cashfree.com/pg';
+            console.warn("Using Legacy Config (owner.js) - Please migrate to .env for security");
+        }
+
+        if (!appId || !secretKey) {
+            console.error("Missing Cashfree Credentials");
+            return res.status(500).json({ success: false, message: 'Payment gateway configuration error' });
+        }
+
+        const orderId = passedOrderId || `ORD_${Date.now()}_${Math.floor(Math.random() * 1000)}`;
+
+        // Create Transaction Record FIRST (Pending)
+        const newTxn = await Transaction.findOneAndUpdate(
+            { orderId },
+            {
+                $set: {
+                    amount: Number(amount),
+                    paymentMethod: method ? method.toUpperCase() : 'GENERAL',
+                    description: 'Cashfree Payment Request',
+                    status: 'pending',
+                    idempotencyKey: idempotencyKey || null,
+                    customerInfo: {
+                        name: req.body.customerName || "Customer",
+                        phone: req.body.customerPhone || "9999999999",
+                        email: req.body.customerEmail || "customer@example.com"
+                    }
+                }
+            },
+            { upsert: true, new: true, setDefaultsOnInsert: true }
+        );
+
+        // Map frontend method to Cashfree method codes
+        let methodCode = "";
+        const m = method ? method.toLowerCase() : "";
+        if (m === 'upi') methodCode = "upi";
+        else if (m === 'card') methodCode = "cc,dc";
+        else if (m === 'netbanking') methodCode = "nb";
+        else if (m === 'wallet') methodCode = "app";
+
+        const body = {
+            order_amount: Number(amount),
+            order_currency: "INR",
+            order_id: orderId,
+            customer_details: {
+                customer_id: "cust_" + (req.user ? req.user._id : Date.now()),
+                customer_phone: newTxn.customerInfo.phone,
+                customer_name: newTxn.customerInfo.name,
+                customer_email: newTxn.customerInfo.email
+            },
+            order_meta: {
+                return_url: `${req.protocol}://${req.get('host')}/payment/verify?order_id=${orderId}`
+            }
+        };
+
+        if (methodCode) {
+            body.order_meta.payment_methods = methodCode;
+        }
+
+        const headers = {
+            'Content-Type': 'application/json',
+            'x-client-id': appId,
+            'x-client-secret': secretKey,
+            'x-api-version': '2022-09-01'
+        };
+
+        const cfResp = await axios.post(`${baseUrl}/orders`, body, { headers, timeout: 15000 });
+        const data = cfResp.data;
+
+        if (!data || !data.payment_session_id) {
+            throw new Error('Invalid response from Gateway - No Session ID');
+        }
+
+        // Update Transaction with Session ID
+        await Transaction.findOneAndUpdate(
+            { orderId },
+            {
+                $set: {
+                    'paymentDetails.payment_session_id': data.payment_session_id,
+                    'paymentDetails.cf_order_id': data.cf_order_id,
+                    gatewayPaymentId: data.cf_order_id,
+                    gatewayStatus: data.order_status
+                }
+            }
+        );
+
+        // Return ONLY what frontend needs
+        return res.json({
+            success: true,
+            payment_session_id: data.payment_,
+            order_id: orderId
+        });
+
+    } catch (error) {
+        console.error('Create Order Error:', error.response?.data || error.message);
+        return res.status(500).json({
+            success: false,
+            message: 'Could not initiate payment',
+            details: error.response?.data?.message || error.message
+        });
+    }
+};
+
+// Verify/Webhook Handler
+exports.verifyCashfreePayment = async (req, res) => {
+    try {
+        // Handle GET Redirect (User returns to site)
+        if (req.method === 'GET') {
+            const orderId = req.query.order_id;
+            if (!orderId) return res.redirect('/payment/failed');
+
+            return res.render('paymentSuccess', {
+                transaction: await Transaction.findOne({ orderId }),
+                title: 'Payment Status'
+            });
+        }
+
+        // Handle POST Webhook
+        if (req.method === 'POST') {
+            const { data, event_time, type } = req.body;
+
+            if (type === 'PAYMENT_SUCCESS_WEBHOOK') {
+                await Transaction.findOneAndUpdate(
+                    { orderId: data.order.order_id },
+                    {
+                        status: 'success',
+                        gatewayStatus: data.payment.payment_status,
+                        gatewayPaymentId: data.payment.cf_payment_id,
+                        paymentDetails: data
+                    }
+                );
+            } else if (type === 'PAYMENT_FAILED_WEBHOOK') {
+                await Transaction.findOneAndUpdate(
+                    { orderId: data.order.order_id },
+                    {
+                        status: 'failed',
+                        gatewayStatus: data.payment.payment_status,
+                        failureReason: data.payment.payment_message
+                    }
+                );
+            }
+
+            return res.json({ status: 'OK' });
+        }
+    } catch (error) {
+        console.error('Verify/Webhook Error:', error);
+        res.status(500).send('Error');
+    }
+};
 
 // Legacy UPI Process
 exports.processUpiPayment = async (req, res) => {
