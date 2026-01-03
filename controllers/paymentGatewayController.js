@@ -26,7 +26,7 @@ exports.renderPaymentGateway = async (req, res) => {
         const safeDescription = description || 'Payment';
         const safeAmount = parseFloat(amount || 299).toFixed(2);
         const payeeName = encodeURIComponent(owner.name || 'Owner');
-        const upiMeUrl = `https://www.upi.me/pay?pa=${sanitizedUpiId}&am=${safeAmount}&pn=${payeeName}`;
+        const upiMeUrl = `upi://pay?pa=${sanitizedUpiId}&am=${safeAmount}&pn=${payeeName}`;
 
 
         res.render('paymentGateway', {
