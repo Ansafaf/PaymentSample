@@ -3,12 +3,11 @@ const router = express.Router();
 const {
     renderPaymentGateway,
     processUpiPayment,
-    createCashfreeOrder,
-    verifyCashfreePayment,
     getTransactionStatus,
     renderPaymentSuccess,
     downloadReceipt,
     verifyManualPayment
+
 } = require('../controllers/paymentGatewayController.js');
 
 // Render payment gateway page
